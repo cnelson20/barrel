@@ -1,2 +1,2 @@
-# lucozade
+# barrel
 Python webserver library

@@ -1,3 +1,7 @@
+*.ppu
+*.o
+
+
 # Prerequisites
 *.d
 

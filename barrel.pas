@@ -18,6 +18,11 @@ type
 		uri : String;
 		method : String;
 		protocol : String;
+		Args : TStringMap;
+
+		constructor Create;
+		destructor Destroy;
+		procedure DeriveGetArgs(s : String);
 	end;
 	TResponse = class
 	private
@@ -38,6 +43,7 @@ type
 	private
 		Routes : TRoutesMap;
 		DefaultHandler : TRouteFunction;
+		DefaultHeaders : TStringMap;
 
 		procedure WriteHeaders(ASocket: TTCPBlockSocket; ResponseHeaders : TStringMap);
 		procedure AttendConnection(ASocket: TTCPBlockSocket);
@@ -61,8 +67,10 @@ var
 	timeout: integer;
 	s: string;
 	method, uri, protocol: String;
-	temp: String;
-	ResultCode: integer;
+
+	RequestURI : String;
+
+	TempInt : LongInt;
 	req : TRequest;
 	res : TResponse;
 	RouteFunction : TRouteFunction;
@@ -73,7 +81,7 @@ begin
 	s := ASocket.RecvString(timeout);
 	{ WriteLn(s); }
 	method := fetch(s, ' ');
-	uri := fetch(s, ' ');
+	RequestURI := fetch(s, ' ');
 	protocol := fetch(s, ' ');
 
 	//read request headers
@@ -82,45 +90,71 @@ begin
 		//WriteLn(s);
 	until s = '';
 
-	// Now write the document to the output stream
+	req := TRequest.Create;
+	res := TResponse.Create; 
+
+	TempInt := Pos('?', RequestURI);
+	if TempInt <> 0 then begin
+		//WriteLn('Running req.DeriveGetArgs');
+		req.DeriveGetArgs(Copy(RequestURI, TempInt + 1));
+		//WriteLn('done');
+		uri := Copy(RequestURI, 1, TempInt - 1);
+	end else
+		uri := RequestURI;	
+
+	if Routes.ContainsKey(uri) then
+		RouteFunction := Routes.Items[uri]
+	else 
+		RouteFunction := DefaultHandler;
 	
+	req.uri := uri;
+	req.method := method;
+	req.protocol := protocol;
+	
+	RouteFunction(req, res);
 
-	if Routes.ContainsKey(uri) then begin
-		req := TRequest.Create;
-		res := TResponse.Create; 
+	WriteLn(method, ' ', RequestURI, ' ', res.Status);
+	ASocket.SendString('HTTP/1.0 ' + IntToStr(res.Status) + CRLF);
+	WriteHeaders(ASocket, res.ResponseHeaders);
 
-		req.uri := uri;
-		req.method := method;
-		req.protocol := protocol;
+	ASocket.SendString(CRLF);
+	
+	ASocket.SendString(res.Body + CRLF);
+	
+	req.Destroy;
+	res.Destroy;
+end;
 
-		RouteFunction := Routes.Items[uri];
-		RouteFunction(req, res);
+constructor TRequest.Create;
+begin
+	Args := TStringMap.Create;
+end;
 
-		WriteLn(method, ' ', uri, ' ', res.Status);
-		ASocket.SendString('HTTP/1.0 ' + IntToStr(res.Status) + CRLF);
-		WriteHeaders(ASocket, res.ResponseHeaders);
+destructor TRequest.Destroy;
+begin
+	Args.Destroy;
+end;
 
-		ASocket.SendString(CRLF);
-		
-		ASocket.SendString(res.Body + CRLF);
+procedure TRequest.DeriveGetArgs(s : String);
+var 
+	i, j : LongInt;
+	CurrKey, CurrVal : String;
+begin
 
-		req.Destroy;
-		res.Destroy;
-	end else begin
-		req := TRequest.Create;
-		req.uri := uri;
-		req.method := method;
-		req.protocol := protocol;
-
-		res := TResponse.Create;
-		StatusHandlers.Items[404](req, res);
-		ASocket.SendString('HTTP/1.0 ' + IntToStr(res.Status) + CRLF);
-		WriteHeaders(ASocket, res.ResponseHeaders);
-		ASocket.SendString(CRLF);
-		ASocket.SendString(res.Body + CRLF);
-
-		req.Destroy;
-		res.Destroy;
+	i := 1;
+	while i <= Length(s) do begin
+		j := PosFrom('=', s, i);
+		if j = 0 then exit;
+		CurrKey := Copy(s, i, j - i);
+		i := j + 1;
+		j := PosFrom('&', s, i);
+		if j = 0 then
+		  	CurrVal := Copy(s, i)
+		else
+			CurrVal := Copy(s, i, j - i);
+		Args.AddOrSetValue(CurrKey, CurrVal);
+		if j = 0 then exit;
+		i := j + 1;
 	end;
 end;
 
@@ -139,8 +173,9 @@ begin
 	ResponseHeaders.Destroy;
 end;
 
-procedure Handle404Default(req : TRequest; res : TResponse);
+procedure Handler404Default(req : TRequest; res : TResponse);
 begin
+	res.Status := 404;
 	res.Body := 'The file at ' + req.uri + ' does not exist.';
 end;
 
@@ -151,7 +186,7 @@ begin
 	DefaultHeaders.Add('Server','Pascal-Barrel using Synapse');
 	
 	Routes := TRoutesMap.Create;
-	SetDefaultHandler(Handler404Default);
+	SetDefaultHandler(@Handler404Default);
 end;
 
 procedure TApp.AddRoute(s : String; Fxn : TRouteFunction);
@@ -197,7 +232,7 @@ begin
 	ListenerSocket.bind(Host,IntToStr(ListenPort));
 	ListenerSocket.listen;
 
-	WriteLn('Server running at', Host, ':', ListenPort, '/');
+	WriteLn('Server running at ', Host, ':', ListenPort, '/');
 
 	repeat
 		if ListenerSocket.canread(1000) then begin

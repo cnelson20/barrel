@@ -58,6 +58,31 @@ type
 	
 implementation
 
+function ParseGetStrings(s : String): String;
+var
+	Temp : String;
+	i : LongInt;
+	j : LongInt;
+begin
+	Temp := '';
+	i := 1;
+	while i <= Length(s) do begin
+		j := PosFrom('%', s, i);
+		if j = 0 then begin
+			Temp += Copy(s, i);
+			break;
+		end else begin
+			Temp += Copy(s, i, j - i);
+			i := j + 1;
+			j := 16 * (Ord(s[i]) - $30) + (Ord(s[i+1]) - $30);
+			Temp += Chr(j);
+			i += 2;
+		end;
+	end;
+	ParseGetStrings := Temp;
+end;
+
+
 {
   Attends a connection. Reads the headers and gives an
   appropriate response
@@ -152,7 +177,7 @@ begin
 		  	CurrVal := Copy(s, i)
 		else
 			CurrVal := Copy(s, i, j - i);
-		Args.AddOrSetValue(CurrKey, CurrVal);
+		Args.AddOrSetValue(ParseGetStrings(CurrKey), ParseGetStrings(CurrVal));
 		if j = 0 then exit;
 		i := j + 1;
 	end;
@@ -206,12 +231,14 @@ var
 begin
 	TempArray := DefaultHeaders.ToArray;
 	for i := 0 to Length(TempArray) - 1 do begin
-		if ResponseHeaders.ContainsKey(TempArray[i].Key) then begin
-			ASocket.SendString(TempArray[i].Key + ': ' +  ResponseHeaders.Items[TempArray[i].Key] + CRLF);
-		end else begin
+		if not ResponseHeaders.ContainsKey(TempArray[i].Key) then begin
 			ASocket.SendString(TempArray[i].Key + ': ' +  TempArray[i].Value + CRLF);
 		end;
 	end;
+	TempArray := ResponseHeaders.ToArray;
+	for i := 0 to Length(TempArray) - 1 do
+		ASocket.SendString(TempArray[i].Key + ': ' +  TempArray[i].Value + CRLF);
+	ASocket.SendString('Date: ' + Rfc822DateTime(now) + CRLF);
 end;
 
 procedure TApp.SetDefaultHeader(k, h : String);

@@ -1,11 +1,34 @@
 unit Templater;
-{$h+}
+{$ifdef fpc}
+  {$mode delphi}
+  {$h+}
+  {$m+}
+{$endif}
 interface
 
 function LoadFile(Filename : String): String;
+function LoadFileAndCache(Filename : String): String;
 
 implementation
-uses Sysutils;
+uses Sysutils, Generics.Collections;
+
+type
+    TStringMap = TDictionary<String,String>;
+var
+    LoadFileCache : TStringMap;
+
+function LoadFileAndCache(Filename : String): String;
+var
+    TempString : String;
+begin
+    if LoadFileCache.ContainsKey(Filename) then
+        LoadFileAndCache := LoadFileCache.Items[Filename]  
+    else begin
+        TempString := LoadFile(Filename);
+        LoadFileCache.Add(Filename, TempString);
+        LoadFileAndCache := TempString;   
+    end;
+end;
 
 function LoadFile(Filename : String): String;
 var
@@ -26,6 +49,16 @@ begin
         LoadFile := Str;
     end else 
         LoadFile := '';
+end;
+
+initialization
+begin
+    LoadFileCache := TStringMap.Create;
+end;
+
+finalization
+begin
+    LoadFileCache.Destroy;
 end;
 
 end.

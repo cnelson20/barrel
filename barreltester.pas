@@ -35,7 +35,7 @@ end;
 procedure LoaderTest(req : TRequest; res : TResponse);
 begin
 	res.Status := 200;
-	res.Body := LoadFile('barreltester.pas');
+	res.Body := LoadFileAndCache('barreltester.pas');
 end;
 
 var

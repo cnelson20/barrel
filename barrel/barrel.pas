@@ -5,7 +5,9 @@ unit Barrel;
   {$m+}
 {$endif}
 
-{@$apptype console}
+{$unitpath .}
+
+{$apptype console}
 
 interface
 uses Classes, blcksock, sockets, Synautil, SysUtils, StrUtils, Generics.collections;

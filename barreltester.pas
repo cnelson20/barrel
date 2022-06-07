@@ -5,6 +5,8 @@ program BarrelTester;
   {$m+}
 {$endif}
 
+{$unitpath barrel}
+
 uses Barrel, Templater, Generics.Collections;
 
 procedure RootPage(req : TRequest; res : TResponse);

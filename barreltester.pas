@@ -32,6 +32,16 @@ begin
 	res.Status := 200;
 end;
 
+procedure PostTest(req : TRequest; res : TResponse);
+begin
+	res.Status := 200;
+	res.Body := '<!DOCTYPE html><html><body><div>';
+	res.Body += WriteStringMap(req.PostForm);
+	res.Body += '</div>';
+	res.Body += '<form action="/post" method="POST"><textarea name="user"></textarea><br><input name="pass" type="text"><br><input type="submit" value="Send"></form>';
+	res.Body += '</body></html>';
+end;
+
 procedure LoaderTest(req : TRequest; res : TResponse);
 begin
 	res.Status := 200;
@@ -46,6 +56,7 @@ begin
 	Server := TApp.Create;
 	Server.AddRoute('/', @RootPage);
 	Server.AddRoute('/test', @GetTest);
+	Server.AddRoute('/post', @PostTest);
 	Server.AddRoute('/source', @LoaderTest);
 	Server.Run('localhost', 5000);
 end;

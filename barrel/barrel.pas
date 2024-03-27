@@ -10,7 +10,7 @@ unit Barrel;
 {$apptype console}
 
 interface
-uses Classes, blcksock, sockets, Synautil, SysUtils, StrUtils, Generics.collections;
+uses Classes, baseunix, blcksock, sockets, Synautil, SysUtils, StrUtils, Generics.collections;
 
 type
 	TStringMap = TDictionary<String, String>;
@@ -276,6 +276,7 @@ end;
 procedure TApp.Run(Host : String; ListenPort : Word);
 var
   ListenerSocket, ConnectionSocket: TTCPBlockSocket;
+  ChildPID : TPid;
 
 begin
 	ListenerSocket := TTCPBlockSocket.Create;
@@ -292,8 +293,13 @@ begin
 		if ListenerSocket.canread(1000) then begin
 			ConnectionSocket.Socket := ListenerSocket.accept;
 			
-			//WriteLn('Attending Connection. Error code (0=Success): ', ConnectionSocket.lasterror);
-			AttendConnection(ConnectionSocket);
+			ChildPID := FpFork();
+			if ChildPID = 0 then begin
+				//WriteLn('Attending Connection. Error code (0=Success): ', ConnectionSocket.lasterror);
+				AttendConnection(ConnectionSocket);
+				ConnectionSocket.CloseSocket;
+				Exit;
+			end;
 			ConnectionSocket.CloseSocket;
 		end;
 	until false;

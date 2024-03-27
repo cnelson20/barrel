@@ -4,14 +4,20 @@ else
 	CC = fpc
 endif
 
-all: barrel/barrel.ppu barrel/templater.ppu barreltester.pas
-	$(CC) -Fubarrel/synapse barreltester.pas -O3 -Px86_64
+FLAGS = -O3 -Px86_64
+SRC_LOC = ../barrel
+
+all: copy barreltester.pas
+	$(CC) -Fubarrel/synapse barreltester.pas $(FLAGS)
+
+copy: $(SRC_LOC)/*
+	cp $(SRC_LOC) -r ./
 
 barrel/templater.ppu: barrel/templater.pas
-	$(CC) barrel/templater.pas -O3 -Px86_64
+	$(CC) barrel/templater.pas $(FLAGS)
 
 barrel/barrel.ppu: barrel/barrel.pas
-	$(CC) -Fubarrel/synapse barrel/barrel.pas -O3 -Px86_64
+	$(CC) -Fubarrel/synapse barrel/barrel.pas $(FLAGS)
 
 clean:
 	-rm *.o

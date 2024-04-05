@@ -292,14 +292,8 @@ begin
 	repeat
 		if ListenerSocket.canread(1000) then begin
 			ConnectionSocket.Socket := ListenerSocket.accept;
-			
-			ChildPID := FpFork();
-			if ChildPID = 0 then begin
-				//WriteLn('Attending Connection. Error code (0=Success): ', ConnectionSocket.lasterror);
-				AttendConnection(ConnectionSocket);
-				ConnectionSocket.CloseSocket;
-				Exit;
-			end;
+			//WriteLn('Attending Connection. Error code (0=Success): ', ConnectionSocket.lasterror);
+			AttendConnection(ConnectionSocket);
 			ConnectionSocket.CloseSocket;
 		end;
 	until false;

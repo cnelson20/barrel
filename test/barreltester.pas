@@ -12,7 +12,7 @@ uses Barrel, Templater, Generics.Collections;
 procedure RootPage(req : TRequest; res : TResponse);
 begin
 	res.Status := 200;
-	res.Body := '<!DOCTYPE html><html><body style="position:fixed;top:20%;left:0%;right:0%;"><center>Hello World!</center></body></html>';
+	res.Body := '<!DOCTYPE html><html><body style="position:fixed;top:20%;left:0%;right:0%;"><center>Hello World!</center>Pages:<br><a href="/test">GetTest</a><br><a href="/post">POST</a><br><a href="/source">Source</a><br></body></html>';
 end;
 
 function WriteStringMap(m : TStringMap): String;
@@ -45,9 +45,17 @@ begin
 end;
 
 procedure LoaderTest(req : TRequest; res : TResponse);
+var
+	Params : TDictionary<String,String>;
+	RandString : String;
 begin
+	Params := TDictionary<String,String>.Create;
+	
+	Str(random(100), RandString);
+	Params.Add('rand', RandString);
+	
+	res.body := RunTemplateAndCache('templates/test.html', Params);
 	res.Status := 200;
-	res.Body := LoadFileAndCache('barreltester.pas');
 end;
 
 var
@@ -59,7 +67,7 @@ begin
 	Server.AddRoute('/', @RootPage);
 	Server.AddRoute('/test', @GetTest);
 	Server.AddRoute('/post', @PostTest);
-	Server.AddRoute('/source', @LoaderTest);
+	Server.AddRoute('/template', @LoaderTest);
 	Server.Run('localhost', 5000);
 end;
 

@@ -1,8 +1,4 @@
-ifeq ($(OS),Windows_NT)
-	CC = fpc.exe
-else 
-	CC = fpc
-endif
+CC = fpc
 
 FLAGS = -O3 -Px86_64
 SRC_LOC = ../barrel
@@ -11,13 +7,11 @@ all: copy barreltester.pas
 	$(CC) -Fubarrel/synapse barreltester.pas $(FLAGS)
 
 copy: $(SRC_LOC)/*
-	cp $(SRC_LOC) -r ./
+	make -C $(SRC_LOC)
+	cp $(SRC_LOC)/*.o ./
+	cp $(SRC_LOC)/synapse -r ./
 
-barrel/templater.ppu: barrel/templater.pas
-	$(CC) barrel/templater.pas $(FLAGS)
-
-barrel/barrel.ppu: barrel/barrel.pas
-	$(CC) -Fubarrel/synapse barrel/barrel.pas $(FLAGS)
+BARREL_FLAGS = -Fubarrel/synapse -Fubarrel $(FLAGS)
 
 clean:
 	-rm *.o

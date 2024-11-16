@@ -161,7 +161,7 @@ begin
 	
 	RouteFunction(req, res);
 
-	Write('[', Rfc822DateTime(now), ']  ');
+	Write('[', Rfc822DateTime(now), '] ');
 	WriteLn(method, ' ', RequestURI, ' ', res.Status);
 	ASocket.SendString('HTTP/1.1 ' + IntToStr(res.Status) + CRLF);
 	WriteHeaders(ASocket, res.ResponseHeaders);
